@@ -6,7 +6,7 @@ import multer from 'multer';
 import cors from 'cors';
 import User from './models/User.js';
 
-// Comenta que hace esta línea: Carga las variables de entorno del archivo .env al proceso de Node.js
+// Carga las variables de entorno del archivo .env al proceso de Node.js
 dotenv.config();
 
 // Crea una instancia de la aplicación Express
