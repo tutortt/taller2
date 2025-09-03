@@ -6,10 +6,11 @@ import multer from 'multer';
 import cors from 'cors';
 import User from './models/User.js';
 
+// Comenta que hace esta línea: Carga las variables de entorno del archivo .env al proceso de Node.js
 dotenv.config();
 
+// Crea una instancia de la aplicación Express
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -78,7 +79,36 @@ app.get('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// 4. Editar usuario (PATCH)
+// 4. Actualizar usuario (PUT) - reemplaza completamente los campos enviados
+app.put('/api/usuarios/:id', upload.single('imagenPerfil'), async (req, res) => {
+  try {
+    const { nombre, correo, edad } = req.body;
+    const update = { nombre, correo, edad };
+    if (req.file) update.imagenPerfil = req.file.path;
+
+    // Validación básica: debe enviar al menos un campo a actualizar
+    const hasAnyField = Object.values(update).some(value => value !== undefined && value !== null);
+    if (!hasAnyField && !req.file) {
+      return res.status(400).json({ error: 'Debes enviar datos para actualizar' });
+    }
+
+    const usuario = await User.findByIdAndUpdate(
+      req.params.id,
+      update,
+      { new: true, runValidators: true }
+    ).select('-__v');
+
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({ mensaje: 'Usuario actualizado (PUT)', usuario });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'El correo ya está registrado' });
+    }
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 5. Editar usuario (PATCH)
 app.patch('/api/usuarios/:id', upload.single('imagenPerfil'), async (req, res) => {
   try {
     const { nombre, correo, edad } = req.body;
@@ -101,7 +131,7 @@ app.patch('/api/usuarios/:id', upload.single('imagenPerfil'), async (req, res) =
   }
 });
 
-// 5. Eliminar usuario
+// 6. Eliminar usuario
 app.delete('/api/usuarios/:id', async (req, res) => {
   try {
     const usuario = await User.findByIdAndDelete(req.params.id);
@@ -112,7 +142,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// 6. Buscar usuarios (por nombre o correo, insensible a mayúsculas)
+// 7. Buscar usuarios (por nombre o correo, insensible a mayúsculas)
 app.get('/api/buscar', async (req, res) => {
   try {
     const { q } = req.query;
